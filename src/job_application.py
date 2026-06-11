@@ -10,6 +10,7 @@ class JobApplication:
         location,
         application_date,
         cv_used,
+        id,
         status=ApplicationStatus.PENDING,
     ):
         self.company_name = company_name
@@ -18,8 +19,10 @@ class JobApplication:
         self.application_date = application_date
         self.cv_used = cv_used
         self.status = status
+        self.id = id
 
         self.responses = []
+        
 
     def change_status(self, new_status):
         self.status = new_status
