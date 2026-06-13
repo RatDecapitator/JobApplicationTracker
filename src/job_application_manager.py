@@ -20,3 +20,7 @@ class JobApplicationManager:
                 return application
 
         return None
+
+    def remove_application(self, application_id):
+        application = self.find_application(application_id)
+        self.applications.remove(application)

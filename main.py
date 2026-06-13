@@ -1,20 +1,48 @@
-# used for testing
-
 from src.job_application import JobApplication
 from src.job_application_manager import JobApplicationManager
-from src.application_status import ApplicationStatus
 
-application = JobApplication(
+manager = JobApplicationManager()
+
+app1 = JobApplication(
     "Google",
     "Backend Developer",
     "Warsaw",
-    "2026-06-11",
+    "2025-06-12",
     "CV_v1",
 )
 
-manager = JobApplicationManager()
-manager.add_application(application)
+app2 = JobApplication(
+    "Microsoft",
+    "Python Developer",
+    "Krakow",
+    "2025-06-13",
+    "CV_v2",
+)
 
-print(manager.applications)
-print(manager.applications[0].company_name)
-print(manager.applications[0].status.value)
+app3 = JobApplication(
+    "Amazon",
+    "Software Engineer",
+    "Remote",
+    "2025-06-14",
+    "CV_v1",
+)
+
+manager.add_application(app1)
+manager.add_application(app2)
+manager.add_application(app3)
+
+print("=== ALL APPLICATIONS ===")
+for application in manager.get_all_applications():
+    print(application.id, application.company_name)
+
+print("\n=== FIND APPLICATION ===")
+found = manager.find_application(2)
+
+if found:
+    print(found.id, found.company_name)
+
+print("\n=== REMOVE APPLICATION ===")
+manager.remove_application(2)
+
+for application in manager.get_all_applications():
+    print(application.id, application.company_name)
