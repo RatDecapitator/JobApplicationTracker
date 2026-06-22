@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from src.application_status import ApplicationStatus
 from src.job_application_manager import JobApplicationManager
 from src.job_application import JobApplication
+from src.company_response import CompanyResponse
+from src.response_type import ResponseType
 
 app = FastAPI()
 
@@ -20,6 +22,12 @@ class JobApplicationCreate(BaseModel):
 
 class JobApplicationStatusUpdate(BaseModel):
     status: ApplicationStatus
+
+
+class CompanyResponseCreate(BaseModel):
+    response_date: str
+    content: str
+    response_type: ResponseType
 
 
 manager.add_application(
@@ -93,3 +101,31 @@ def update_application_status(
     application.change_status(status_update.status)
 
     return application
+
+
+@app.post("/applications/{application_id}/responses")
+def add_company_response(
+    application_id: int,
+    response_data: CompanyResponseCreate,
+):
+    application = manager.find_application(application_id)
+
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    response = CompanyResponse(
+        response_data.response_date, response_data.content, response_data.response_type
+    )
+
+    application.add_response(response)
+
+    return application
+
+@app.get("/applications/{application_id}/responses")
+def get_company_responses(application_id: int):
+    application = manager.find_application(application_id)
+
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    return application.responses
