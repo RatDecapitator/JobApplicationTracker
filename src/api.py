@@ -1,8 +1,9 @@
-from fastapi import FastAPI
-from src.job_application_manager import JobApplicationManager
-from src.job_application import JobApplication
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+from src.application_status import ApplicationStatus
+from src.job_application_manager import JobApplicationManager
+from src.job_application import JobApplication
 
 app = FastAPI()
 
@@ -15,6 +16,10 @@ class JobApplicationCreate(BaseModel):
     location: str
     application_date: str
     cv_used: str
+
+
+class JobApplicationStatusUpdate(BaseModel):
+    status: ApplicationStatus
 
 
 manager.add_application(
@@ -59,5 +64,32 @@ def create_application(application_data: JobApplicationCreate):
     )
 
     manager.add_application(application)
+
+    return application
+
+
+@app.delete("/applications/{application_id}")
+def delete_application(application_id: int):
+    application = manager.find_application(application_id)
+
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    manager.remove_application(application_id)
+
+    return {"message": "Application deleted"}
+
+
+@app.patch("/applications/{application_id}/status")
+def update_application_status(
+    application_id: int,
+    status_update: JobApplicationStatusUpdate,
+):
+    application = manager.find_application(application_id)
+
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    application.change_status(status_update.status)
 
     return application
