@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from src.application_status import ApplicationStatus
-from src.job_application_manager import JobApplicationManager
 from src.job_application import JobApplication
 from src.company_response import CompanyResponse
 from src.response_type import ResponseType
@@ -13,11 +12,13 @@ from src.database import (
     get_application_by_id,
     delete_application_by_id,
     update_application_status as update_application_status_in_db,
+    save_company_response,
+    get_responses_for_application,
+    get_application_statistics,
 )
 
 app = FastAPI()
 create_tables()
-manager = JobApplicationManager()
 
 
 class JobApplicationCreate(BaseModel):
@@ -36,17 +37,6 @@ class CompanyResponseCreate(BaseModel):
     response_date: str
     content: str
     response_type: ResponseType
-
-
-manager.add_application(
-    JobApplication(
-        "Google",
-        "Backend Developer",
-        "Warsaw",
-        "2026-06-13",
-        "CV_v1",
-    )
-)
 
 
 @app.get("/")
@@ -79,10 +69,9 @@ def create_application(application_data: JobApplicationCreate):
         application_data.cv_used,
     )
 
-    manager.add_application(application)
-    save_application(application)
+    application_id = save_application(application)
 
-    return application
+    return get_application_by_id(application_id)
 
 
 @app.delete("/applications/{application_id}")
@@ -120,25 +109,32 @@ def add_company_response(
     application_id: int,
     response_data: CompanyResponseCreate,
 ):
-    application = manager.find_application(application_id)
+    application = get_application_by_id(application_id)
 
     if application is None:
         raise HTTPException(status_code=404, detail="Application not found")
 
     response = CompanyResponse(
-        response_data.response_date, response_data.content, response_data.response_type
+        response_data.response_date,
+        response_data.content,
+        response_data.response_type,
     )
 
-    application.add_response(response)
+    save_company_response(application_id, response)
 
-    return application
+    return {"message": "Response added"}
 
 
 @app.get("/applications/{application_id}/responses")
 def get_company_responses(application_id: int):
-    application = manager.find_application(application_id)
+    application = get_application_by_id(application_id)
 
     if application is None:
         raise HTTPException(status_code=404, detail="Application not found")
 
-    return application.responses
+    return get_responses_for_application(application_id)
+
+
+@app.get("/statistics")
+def get_statistics():
+    return get_application_statistics()

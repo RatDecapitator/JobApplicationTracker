@@ -22,6 +22,15 @@ def create_tables():
         status TEXT NOT NULL
         )
         """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS company_responses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            application_id INTEGER NOT NULL,
+            response_date TEXT NOT NULL,
+            content TEXT NOT NULL,
+            response_type TEXT NOT NULL
+        )
+    """)
 
     connection.commit()
     connection.close()
@@ -55,7 +64,10 @@ def save_application(application):
     )
 
     connection.commit()
+    application_id = cursor.lastrowid
     connection.close()
+
+    return application_id
 
 
 def get_all_applications_from_db():
@@ -67,7 +79,22 @@ def get_all_applications_from_db():
 
     connection.close()
 
-    return rows
+    applications = []
+
+    for row in rows:
+        applications.append(
+            {
+                "id": row[0],
+                "company_name": row[1],
+                "job_title": row[2],
+                "location": row[3],
+                "application_date": row[4],
+                "cv_used": row[5],
+                "status": row[6],
+            }
+        )
+
+    return applications
 
 
 def get_application_by_id(application_id):
@@ -83,7 +110,15 @@ def get_application_by_id(application_id):
 
     connection.close()
 
-    return row
+    return {
+        "id": row[0],
+        "company_name": row[1],
+        "job_title": row[2],
+        "location": row[3],
+        "application_date": row[4],
+        "cv_used": row[5],
+        "status": row[6],
+    }
 
 
 def delete_application_by_id(application_id):
@@ -111,3 +146,83 @@ def update_application_status(application_id, status):
 
     connection.commit()
     connection.close()
+
+
+def save_company_response(application_id, response):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO company_responses
+        (
+            application_id,
+            response_date,
+            content,
+            response_type
+        )
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            application_id,
+            response.response_date,
+            response.content,
+            response.response_type.value,
+        ),
+    )
+
+    connection.commit()
+    connection.close()
+
+
+def get_responses_for_application(application_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT * FROM company_responses
+        WHERE application_id = ?
+        """,
+        (application_id,),
+    )
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    return rows
+
+
+def get_application_statistics():
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT status, COUNT(*) FROM job_applications GROUP BY status")
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    statistics = {
+        "total": 0,
+        "pending": 0,
+        "accepted": 0,
+        "rejected": 0,
+    }
+
+    for row in rows:
+        status = row[0]
+        count = row[1]
+
+        statistics["total"] += count
+
+        if status == "Pending":
+            statistics["pending"] = count
+
+        elif status == "Accepted":
+            statistics["accepted"] = count
+
+        elif status == "Rejected":
+            statistics["rejected"] = count
+
+    return statistics
