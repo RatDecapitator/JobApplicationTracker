@@ -39,17 +39,42 @@ class CompanyResponseCreate(BaseModel):
     response_type: ResponseType
 
 
+class JobApplicationResponse(BaseModel):
+    id: int
+    company_name: str
+    job_title: str
+    location: str
+    application_date: str
+    cv_used: str
+    status: str
+
+
+class CompanyResponseResponse(BaseModel):
+    id: int
+    application_id: int
+    response_date: str
+    content: str
+    response_type: str
+
+
+class StatisticsResponse(BaseModel):
+    total: int
+    pending: int
+    accepted: int
+    rejected: int
+
+
 @app.get("/")
 def root():
     return {"message": "Job Application Tracker API"}
 
 
-@app.get("/applications")
+@app.get("/applications", response_model=list[JobApplicationResponse])
 def get_applications():
     return get_all_applications_from_db()
 
 
-@app.get("/applications/{application_id}")
+@app.get("/applications/{application_id}", response_model=JobApplicationResponse)
 def get_application(application_id: int):
     application = get_application_by_id(application_id)
 
@@ -125,7 +150,10 @@ def add_company_response(
     return {"message": "Response added"}
 
 
-@app.get("/applications/{application_id}/responses")
+@app.get(
+    "/applications/{application_id}/responses",
+    response_model=list[CompanyResponseResponse],
+)
 def get_company_responses(application_id: int):
     application = get_application_by_id(application_id)
 
@@ -135,6 +163,6 @@ def get_company_responses(application_id: int):
     return get_responses_for_application(application_id)
 
 
-@app.get("/statistics")
+@app.get("/statistics", response_model=StatisticsResponse)
 def get_statistics():
     return get_application_statistics()
