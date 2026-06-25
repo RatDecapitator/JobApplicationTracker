@@ -110,6 +110,9 @@ def get_application_by_id(application_id):
 
     connection.close()
 
+    if row is None:
+        return None
+
     return {
         "id": row[0],
         "company_name": row[1],
@@ -191,7 +194,20 @@ def get_responses_for_application(application_id):
 
     connection.close()
 
-    return rows
+    responses = []
+
+    for row in rows:
+        responses.append(
+            {
+                "id": row[0],
+                "application_id": row[1],
+                "response_date": row[2],
+                "content": row[3],
+                "response_type": row[4],
+            }
+        )
+
+    return responses
 
 
 def get_application_statistics():
